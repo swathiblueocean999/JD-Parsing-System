@@ -41,6 +41,29 @@ def parse_job_details(text):
             if role.lower() in profile.lower():
                 found_role = role
                 break
+        #4a. Responsibilities extraction
+        # We capture everything between "Key Responsibilities:" and "Required Skills & Qualifications:"
+        # using a non-greedy, multiline, case-insensitive regex pattern.
+        
+        responsibilities_pattern = r'(?i)Key Responsibilities:[\s:]*([\s\S]*?)(?=(?i:Required Skills & Qualifications:|$))'
+        resp_match = re.search(responsibilities_pattern, profile)
+        
+        found_responsibilities = []
+        
+        if resp_match:
+            # Capture the entire raw text block of responsibilities
+            raw_resp_text = resp_match.group(1).strip()
+            
+            # Use regex to find and extract the individual bullet points.
+            # We look for a newline, a delimiter (- or •), optional space, followed by non-newline characters.
+            # Your PDF uses '•', so we explicitly include it.
+            bullet_pattern = r'(?:^|[\r\n])[ \t]*[-•][ \t]*(.+?)(?=[\r\n]|$)'
+            
+            # Find all matches, which will be the individual responsibility lines.
+            bullet_matches = re.findall(bullet_pattern, raw_resp_text)
+            
+            # Double check to remove any leading/trailing spaces from each line.
+            found_responsibilities = [item.strip() for item in bullet_matches if item.strip()]
         
         # 5. Education list regex pattern 
         education = "Not Mentioned"
@@ -52,7 +75,8 @@ def parse_job_details(text):
             "Role_Name": found_role,
             "Education": education,
             "Experience_Required": experience,
-            "Required_Skills": list(set(found_skills))
+            "Required_Skills": list(set(found_skills)),
+            "Key_Responsibilities": found_responsibilities
         })
     
     return parsed_in_page
